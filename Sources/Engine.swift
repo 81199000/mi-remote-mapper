@@ -7,6 +7,7 @@ import ApplicationServices
 import IOKit.hid
 import Combine
 import AppKit
+import ServiceManagement
 
 // ============ ADPCM (IMA, low-nibble-first, 16 kHz mono) ============
 struct ADPCM {
@@ -112,6 +113,7 @@ final class Engine: ObservableObject {
     @Published var lastButton = ""            // last raw button seen (for Learn)
     @Published var lastButtonUsage: Int = 0
     @Published var capturingUsage: Int? = nil // which button is currently recording a key (-1 = voice)
+    @Published var launchAtLogin = (SMAppService.mainApp.status == .enabled)
     @Published var log: [String] = []
 
     var config = ConfigStore.load()
@@ -251,6 +253,17 @@ final class Engine: ObservableObject {
     }
 
     func saveConfig() { ConfigStore.save(config); L("配置已保存") }
+
+    func setLaunchAtLogin(_ on: Bool) {
+        do {
+            if on { try SMAppService.mainApp.register() }
+            else { try SMAppService.mainApp.unregister() }
+            L(on ? "已开启开机自启" : "已关闭开机自启")
+        } catch {
+            L("开机自启设置失败: \(error.localizedDescription)（App 需位于 /Applications）")
+        }
+        launchAtLogin = (SMAppService.mainApp.status == .enabled)
+    }
 
     func checkPermissions() {
         axTrusted = AXIsProcessTrusted()

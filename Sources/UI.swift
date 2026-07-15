@@ -80,6 +80,10 @@ struct ContentView: View {
             permRow("辅助功能（合成/拦截按键必需）", e.axTrusted, action: { e.requestAX(); e.openAXSettings() }, hint: "点右侧授权")
             permRow("输入监控（读取遥控器按键必需）", e.inputMonitoringOK, action: { e.requestInputMonitoring(); e.openInputMonitoringSettings() }, hint: "点右侧授权")
             permRow("BlackHole 虚拟声卡（当麦克风用）", e.blackholeFound, action: nil, hint: "需安装 BlackHole")
+            Toggle("开机自动启动", isOn: Binding(
+                get: { e.launchAtLogin },
+                set: { e.setLaunchAtLogin($0) }))
+                .padding(.top, 4)
         }
     }
     func permRow(_ name: String, _ ok: Bool, action: (() -> Void)?, hint: String) -> some View {

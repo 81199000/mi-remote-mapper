@@ -32,6 +32,8 @@ input device**, and freely **remap every button** to any keyboard key.
   cleaner mic audio. 语音经高通/人声EQ/噪声门/自动增益/软限幅增强,更响更干净。
 - 📊 **Menu‑bar app.** Lives in the menu bar; click for status, open Settings to
   configure.
+- 🚀 **Launch at login.** One toggle in Settings (requires the app to be in
+  `/Applications`). 设置里一键开机自启（需将 App 放入"应用程序"文件夹）。
 
 ## How it works · 原理
 
