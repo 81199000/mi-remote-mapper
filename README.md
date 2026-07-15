@@ -23,6 +23,13 @@ input device**, and freely **remap every button** to any keyboard key.
   (default: Right ⌘), e.g. to trigger macOS Dictation while you speak.
 - 🎛️ **Full button remapping.** D‑pad / OK / Back / Home / Menu / TV / Power /
   Volume — record any target key (including modifiers & combos) per button.
+- 🖱️ **Mouse & scroll control.** Any button can instead drive the pointer
+  (hold to move, with acceleration), left/right click (hold = drag), or scroll —
+  turning the remote into an air mouse.
+  按键也可映射为鼠标移动/左右键(按住可拖拽)/滚轮,遥控器秒变空中鼠标。
+- 🔊 **Voice enhancement.** Decoded speech runs through a DSP chain
+  (high‑pass → presence EQ → noise gate → AGC → soft limiter) for louder,
+  cleaner mic audio. 语音经高通/人声EQ/噪声门/自动增益/软限幅增强,更响更干净。
 - 📊 **Menu‑bar app.** Lives in the menu bar; click for status, open Settings to
   configure.
 
@@ -30,8 +37,9 @@ input device**, and freely **remap every button** to any keyboard key.
 
 - **Voice** rides Google's **ATVV** GATT service
   (`AB5E0001‑5A21‑4F05‑BC7D‑AF01F617B664`). Audio is **IMA ADPCM, 16 kHz mono**,
-  decoded in real time and pushed into **[BlackHole]** (a virtual audio device)
-  so other apps see it as a mic.
+  decoded in real time, enhanced (high‑pass → presence EQ → noise gate → AGC →
+  soft limiter), and pushed into **[BlackHole]** (a virtual audio device) so
+  other apps see it as a mic.
 - **Buttons** are read straight from the remote over HID
   (`IOHIDManager`), and remapped by synthesizing key events (`CGEvent`); a
   `CGEventTap` suppresses the original key so there's no double input.

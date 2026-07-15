@@ -127,6 +127,13 @@ struct ContentView: View {
                 Button("取消") { e.cancelCapture() }
             } else {
                 Button("录制") { e.beginCapture(usage: usage) }
+                Menu("鼠标/滚轮") {
+                    ForEach(KeyNames.specials, id: \.code) { sp in
+                        Button(sp.name) { e.setSpecial(usage: usage, keycode: sp.code) }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 92)
                 Button("清除") { e.clearMapping(usage: usage) }.foregroundColor(.secondary)
             }
             Spacer()

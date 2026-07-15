@@ -19,15 +19,33 @@ enum KeyNames {
         0x19:"9",0x1D:"0",0x1B:"-",0x18:"=",0x21:"[",0x1E:"]",0x2A:"\\",
         0x29:";",0x27:"'",0x2B:",",0x2F:".",0x2C:"/",0x32:"`",
     ]
+    // 特殊动作（鼠标/滚轮）：占用 0x10000 以上的伪键码
+    static let kSpecialBase = 0x10000
+    static let kMouseUp = 0x10001, kMouseDown = 0x10002, kMouseLeft = 0x10003, kMouseRight = 0x10004
+    static let kMouseClick = 0x10005, kMouseRClick = 0x10006
+    static let kScrollUp = 0x10007, kScrollDown = 0x10008
+    static let specials: [(name: String, code: Int)] = [
+        ("鼠标 ↑", kMouseUp), ("鼠标 ↓", kMouseDown), ("鼠标 ←", kMouseLeft), ("鼠标 →", kMouseRight),
+        ("鼠标左键", kMouseClick), ("鼠标右键", kMouseRClick),
+        ("滚轮 ↑", kScrollUp), ("滚轮 ↓", kScrollDown),
+    ]
     static func label(keycode: Int, cmd: Bool, shift: Bool, opt: Bool, ctrl: Bool) -> String {
         if keycode == kNone { return "（不映射 / 保持原键）" }
-        // lone modifier keycodes already carry their symbol
-        let loneMods: Set<Int> = [0x36,0x37,0x38,0x3C,0x3A,0x3D,0x3B,0x3E,0x39,0x3F]
+        if keycode >= kSpecialBase {
+            return specials.first(where: { $0.code == keycode })?.name ?? String(format:"特殊0x%x", keycode)
+        }
         let base = map[keycode] ?? String(format:"键码0x%02x", keycode)
-        if loneMods.contains(keycode) { return base }
-        var s = ""
-        if ctrl { s += "⌃" }; if opt { s += "⌥" }; if shift { s += "⇧" }; if cmd { s += "⌘" }
-        return s + base
+        var c = cmd, s = shift, o = opt, t = ctrl
+        switch keycode {   // 修饰键自身的 flag 不重复显示
+        case 0x36,0x37: c = false
+        case 0x38,0x3C: s = false
+        case 0x3A,0x3D: o = false
+        case 0x3B,0x3E: t = false
+        default: break
+        }
+        var p = ""
+        if t { p += "⌃" }; if o { p += "⌥" }; if s { p += "⇧" }; if c { p += "⌘" }
+        return p + base
     }
     static let kNone = 0xFFFF
 }
@@ -37,6 +55,9 @@ enum HIDMap {
     static let usageToKeycode: [UInt8: CGKeyCode] = [
         0x52:0x7E, 0x51:0x7D, 0x50:0x7B, 0x4F:0x7C, 0x28:0x24, 0x4A:0x73, 0x35:0x32,
     ]
+    // 语音键除 BLE 语音流外还会发一个 HID F5（usage 0x3E）；macOS 把 F5 当系统听写🎤键，必须吞掉
+    static let voiceUsage: UInt8 = 0x3E
+    static let voiceKeycode: CGKeyCode = 0x60   // F5
 }
 
 struct ButtonMapping: Identifiable, Codable {
