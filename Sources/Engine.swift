@@ -170,11 +170,12 @@ final class Engine: ObservableObject {
         installTap()
         setupHID()
         installKeyCapture()
-        // 若启动时辅助功能尚未授权，授权后自动补装事件拦截
+        // 守护定时器：① 授权后自动补装事件拦截；② 输出设备脱离 BlackHole 时自动重挂
         Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self = self, self.tap == nil else { return }
-                if AXIsProcessTrusted() {
+                guard let self = self else { return }
+                self.audioWatchdog()
+                if self.tap == nil, AXIsProcessTrusted() {
                     self.installTap()
                     if self.tap != nil { self.L("辅助功能已授权，事件拦截已启用") }
                 }
@@ -282,6 +283,23 @@ final class Engine: ObservableObject {
         setOutputDevice()
         engine.prepare()
         do { try engine.start() } catch { L("音频引擎启动失败: \(error)") }
+        verifyOutputDevice()
+        // 设备配置变化（显示器休眠/重连、采样率切换等）会让引擎重建并重置回默认输出，必须重新挂载
+        NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.audioWatchdog(reason: "配置变化通知") }
+        }
+    }
+    func audioWatchdog(reason: String = "定时检查") {
+        guard let bh = Self.deviceID(named: "BlackHole"), let u = engine.outputNode.audioUnit else { return }
+        var cur: AudioDeviceID = 0
+        var sz = UInt32(MemoryLayout<AudioDeviceID>.size)
+        AudioUnitGetProperty(u, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, 0, &cur, &sz)
+        guard cur != bh || !engine.isRunning else { return }
+        L("⚠️ 音频输出脱离 BlackHole（\(reason)，当前设备 \(cur)），自动重新挂载…")
+        engine.stop()
+        setOutputDevice()
+        engine.prepare()
+        do { try engine.start() } catch { L("音频引擎重启失败: \(error)") }
         verifyOutputDevice()
     }
     private func setOutputDevice() {
