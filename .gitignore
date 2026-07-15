@@ -1,0 +1,21 @@
+# build output
+build/
+*.app
+DerivedData/
+*.o
+*.dSYM
+
+# signing / secrets — never commit
+*.p12
+*.pem
+*.cer
+*.certSigningRequest
+*.keychain
+*.keychain-db
+
+# user config (runtime, per-machine)
+config.json
+
+# macOS junk
+.DS_Store
+._*
