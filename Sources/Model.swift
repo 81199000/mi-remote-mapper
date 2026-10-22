@@ -77,10 +77,60 @@ struct ButtonMapping: Identifiable, Codable {
     var display: String { KeyNames.label(keycode: keycode, cmd: cmd, shift: shift, opt: opt, ctrl: ctrl) }
 }
 
+// 单台设备的独立配置（多遥控器支持：按 BLE 设备 identifier 存多份）
+struct DeviceProfile: Codable {
+    var name: String
+    var buttons: [ButtonMapping]
+    var voice: ButtonMapping
+    var voiceStartsMic: Bool
+    var voiceDSP: Bool?
+    var voiceHotkey: Int?
+    var appProfiles: [String: AppProfile]? = nil   // 按前台应用（bundle ID）的专用配置
+
+    init(name: String, config: Config) {
+        self.name = name
+        self.buttons = config.buttons
+        self.voice = config.voice
+        self.voiceStartsMic = config.voiceStartsMic
+        self.voiceDSP = config.voiceDSP
+        self.voiceHotkey = config.voiceHotkey
+    }
+}
+
+// 按应用的专用配置（同一台遥控器在不同软件里用不同按键映射）
+struct AppProfile: Codable {
+    var name: String
+    var buttons: [ButtonMapping]
+    var voice: ButtonMapping
+    var voiceStartsMic: Bool
+    var voiceDSP: Bool?
+    var voiceHotkey: Int?
+
+    init(name: String, config: Config) {
+        self.name = name
+        self.buttons = config.buttons
+        self.voice = config.voice
+        self.voiceStartsMic = config.voiceStartsMic
+        self.voiceDSP = config.voiceDSP
+        self.voiceHotkey = config.voiceHotkey
+    }
+}
+
 struct Config: Codable {
     var buttons: [ButtonMapping]
     var voice: ButtonMapping       // usage = -1
     var voiceStartsMic: Bool
+    var voiceDSP: Bool? = true     // 语音增强 DSP 开关（nil/缺省=开；听写识别率低时可关）
+    var voiceHotkey: Int? = nil    // 语音键 HID F5 改写为的目标键码（真实硬件事件，供输入法"按住说话"识别）；nil=吞掉 F5
+    var devices: [String: DeviceProfile]? = nil   // 各设备的独立配置（key = BLE identifier UUID）
+    var hidVendors: [Int]? = nil                   // 额外 HID vendor ID（非小米 ATVV 遥控器），默认含 0x2717
+    var batteryAlertEnabled: Bool? = true          // 低电量提醒开关
+    var batteryAlertThreshold: Int? = 20           // 低电量阈值 %（低于等于触发提醒）
+    var notifyEnabled: Bool? = true                // 异常通知开关（断连/连接失败/状态异常）
+    var preferredDeviceID: String? = nil           // 首选遥控器（多台时手动切换后记住）
+    var theme: String? = nil                       // 界面主题: "dark"/"light"/"auto"（nil=auto 跟随系统）
+    var voiceSwitchesInput: Bool? = true           // 语音键按下时自动把系统默认输入切到虚拟声卡，松开还原（nil/缺省=开）
+    var voiceInputDeviceUID: String? = nil         // 接管用的虚拟声卡 UID（nil=自动挑选 BlackHole）
 
     static let known: [(usage: Int, name: String)] = [
         (0x52, "方向 上"), (0x51, "方向 下"), (0x50, "方向 左"), (0x4F, "方向 右"),
@@ -103,7 +153,8 @@ struct Config: Codable {
         }
         return Config(buttons: btns,
                       voice: ButtonMapping(usage: -1, name: "语音键", keycode: 0x36, cmd: true),
-                      voiceStartsMic: true)
+                      voiceStartsMic: true,
+                      voiceDSP: true)
     }
     mutating func mergeKnown() {
         for k in Config.known {
